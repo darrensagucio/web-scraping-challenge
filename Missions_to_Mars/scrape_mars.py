@@ -2,11 +2,13 @@ from splinter import Browser
 from bs4 import BeautifulSoup as bs
 import time 
 from webdriver_manager.chrome import ChromeDriverManager
+import pandas as pd 
 
 def scrape():
     url_list = [
         'https://redplanetscience.com/',
         'https://spaceimages-mars.com',
+        'https://galaxyfacts-mars.com',
         'https://marshemispheres.com/cerberus.html',
         'https://marshemispheres.com/schiaparelli.html',
         'https://marshemispheres.com/syrtis.html',
@@ -51,12 +53,24 @@ def scrape():
 
             browser.quit()
         
-        if loop_count > 1:
+        if loop_count == 2:
+            tables = pd.read_html(url_list[i])
+            df = tables[0]
+            rename_column_df = df.rename(columns={0:'Mars - Earth Comparison', 1:'Mars', 2:'Earth'}, inplace=False)
+            drop_row_df = rename_column_df.drop([0])
+            clean_df = drop_row_df.set_index('Mars - Earth Comparison')
+            html_table = clean_df.to_html()
+            clean_html = html_table.replace('\n', '')
+            mars_scrapedata['mars_table'] = clean_html
+            browser.quit()
+        
+        if loop_count > 2:
+            image_url = 'https://marshemispheres.com/'
             hemisphere_block = soup.find('div', class_ = 'downloads')
             hemisphere_ulsection = hemisphere_block.find('ul')
             hemisphere_lisection = hemisphere_ulsection.find_all('li')[0]
             hemisphere_path = hemisphere_lisection.find('a')["href"]
-            hemisphere_url = url_list[i] + hemisphere_path
+            hemisphere_url = image_url + hemisphere_path
     
             hemispheretitle = soup.find('h2', class_ = 'title').text
     
@@ -76,6 +90,3 @@ def scrape():
         loop_count += 1    
 
     return mars_scrapedata
-
-# if __name__ == "__main__":
-#     scrape()
